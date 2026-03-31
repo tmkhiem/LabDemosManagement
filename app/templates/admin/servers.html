@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+{% from 'components/modal.html' import render_modal %}
+
+{% block title %}Manage Servers – Lab Demo Manager{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-900">Lab Servers</h1>
+    <p class="text-gray-500 text-sm mt-1">
+      Predefined servers that students can select when registering demos.
+      Only internal LAN IPs (10.x, 172.16-31.x, 192.168.x) are accepted.
+    </p>
+  </div>
+  <button onclick="openModal('add-server')"
+          class="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-colors">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+    </svg>
+    Add Server
+  </button>
+</div>
+
+<!-- Server Table -->
+<div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+  {% if servers %}
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-100">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">IP Address</th>
+          <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Added</th>
+          <th class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 bg-white">
+        {% for srv in servers %}
+        <tr class="hover:bg-gray-50 transition-colors">
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-semibold text-sm flex-shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2"/>
+                </svg>
+              </div>
+              <span class="text-sm font-semibold text-gray-900 font-mono">{{ srv.name }}</span>
+            </div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <code class="text-sm text-gray-700 bg-gray-100 px-2 py-0.5 rounded font-mono">{{ srv.ip }}</code>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-400">
+            {{ srv.created_at.strftime('%Y-%m-%d') if srv.created_at else '—' }}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-right">
+            <div class="flex items-center justify-end gap-2">
+              <button onclick="openModal('edit-server-{{ srv.id }}')"
+                      class="text-xs px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-medium transition-colors">
+                Edit
+              </button>
+              <button onclick="openModal('delete-server-{{ srv.id }}')"
+                      class="text-xs px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-md font-medium transition-colors">
+                Delete
+              </button>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Edit Server Modal -->
+        {% call render_modal('edit-server-' ~ srv.id, 'Edit Server: ' ~ srv.name) %}
+          <form action="{{ url_for('admin.update_server', server_id=srv.id) }}" method="POST" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Server Name</label>
+              <input type="text" value="{{ srv.name }}" disabled
+                     class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-500 cursor-not-allowed"/>
+              <p class="mt-0.5 text-xs text-gray-400">Name cannot be changed after creation.</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">IP Address</label>
+              <input type="text" name="ip" value="{{ srv.ip }}" required
+                     placeholder="e.g. 10.0.1.11"
+                     pattern="^(\d{1,3}\.){3}\d{1,3}$"
+                     id="ip-input-{{ srv.id }}"
+                     data-hint="ip-hint-{{ srv.id }}"
+                     oninput="validatePrivateIP(this)"
+                     class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"/>
+              <p id="ip-hint-{{ srv.id }}" class="mt-1 text-xs text-gray-400">
+                Must be an internal LAN address (10.x.x.x, 172.16-31.x.x, 192.168.x.x).
+              </p>
+            </div>
+            <div class="flex justify-end gap-3 pt-2">
+              <button type="button" onclick="closeModal('edit-server-{{ srv.id }}')"
+                      class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                Cancel
+              </button>
+              <button type="submit"
+                      class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors">
+                Save
+              </button>
+            </div>
+          </form>
+        {% endcall %}
+
+        <!-- Delete Server Modal -->
+        {% call render_modal('delete-server-' ~ srv.id, 'Delete Server') %}
+          <p class="text-sm text-gray-600 mb-4">
+            Are you sure you want to delete server <strong class="font-mono">{{ srv.name }}</strong>
+            (<code class="text-xs bg-gray-100 px-1 rounded">{{ srv.ip }}</code>)?
+            Existing demos pointing to this server are not affected, but students will no longer be able to select it.
+          </p>
+          <div class="flex justify-end gap-3">
+            <button type="button" onclick="closeModal('delete-server-{{ srv.id }}')"
+                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+              Cancel
+            </button>
+            <form action="{{ url_for('admin.delete_server', server_id=srv.id) }}" method="POST" class="inline">
+              <button type="submit"
+                      class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors">
+                Delete
+              </button>
+            </form>
+          </div>
+        {% endcall %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center py-16 text-gray-400">
+    <svg class="mx-auto w-12 h-12 mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2"/>
+    </svg>
+    <p>No servers configured. Add one to allow students to register demos.</p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Add Server Modal -->
+{% call render_modal('add-server', 'Add Lab Server') %}
+  <form action="{{ url_for('admin.create_server') }}" method="POST" class="space-y-4">
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Server Name
+        <span class="font-normal text-gray-400 text-xs">(lowercase, letters, numbers, hyphens)</span>
+      </label>
+      <input type="text" name="name" required pattern="[a-z0-9-]+"
+             placeholder="e.g. dragon1"
+             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">IP Address</label>
+      <input type="text" name="ip" required
+             placeholder="e.g. 10.0.1.11"
+             pattern="^(\d{1,3}\.){3}\d{1,3}$"
+             id="new-server-ip"
+             data-hint="new-ip-hint"
+             oninput="validatePrivateIP(this)"
+             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"/>
+      <p id="new-ip-hint" class="mt-1 text-xs text-gray-400">
+        Must be an internal LAN address (10.x.x.x, 172.16-31.x.x, 192.168.x.x).
+      </p>
+    </div>
+    <div class="flex justify-end gap-3 pt-2">
+      <button type="button" onclick="closeModal('add-server')"
+              class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+        Cancel
+      </button>
+      <button type="submit"
+              class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors">
+        Add Server
+      </button>
+    </div>
+  </form>
+{% endcall %}
+{% endblock %}

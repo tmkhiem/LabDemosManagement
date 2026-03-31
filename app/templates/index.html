@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% from 'components/demo_card.html' import render_card %}
+
+{% block title %}Lab Demo Manager – All Demos{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+  <h1 class="text-3xl font-bold text-gray-900">Student Demos</h1>
+  <p class="mt-2 text-gray-500">Browse all active student project demos below.</p>
+</div>
+
+{% if demos_by_student %}
+  {% for student, demos in demos_by_student.items() %}
+  <section class="mb-10">
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-lg flex-shrink-0">
+        {{ student.display_name[0].upper() }}
+      </div>
+      <div>
+        <h2 class="text-xl font-semibold text-gray-800">{{ student.display_name }}</h2>
+        <span class="text-sm text-gray-400 font-mono">/{{ student.username }}/</span>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {% for demo in demos %}
+        {{ render_card(demo) }}
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+{% else %}
+  <div class="text-center py-20">
+    <svg class="mx-auto w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+        d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+    </svg>
+    <h3 class="text-xl font-medium text-gray-500">No demos yet</h3>
+    <p class="mt-1 text-gray-400">Student demos will appear here once they are registered.</p>
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-50">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Lab Demo Manager{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='tailwind.css') }}">
+  <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</head>
+<body class="h-full flex flex-col">
+
+  <!-- Navigation -->
+  <nav class="bg-indigo-700 shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <a href="{{ url_for('index') }}" class="flex items-center gap-2 text-white font-bold text-xl tracking-tight">
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+          </svg>
+          Lab Demo Manager
+        </a>
+        <div class="flex items-center gap-4">
+          {% if current_user.is_authenticated %}
+            <span class="text-indigo-200 text-sm hidden sm:block">
+              {{ current_user.display_name }}
+              <span class="ml-1 px-2 py-0.5 rounded-full text-xs font-medium
+                {{ 'bg-yellow-400 text-yellow-900' if current_user.role == 'admin' else 'bg-indigo-300 text-indigo-900' }}">
+                {{ current_user.role }}
+              </span>
+            </span>
+            {% if current_user.role == 'admin' %}
+              <a href="{{ url_for('admin.dashboard') }}"
+                 class="text-indigo-100 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                Dashboard
+              </a>
+              <a href="{{ url_for('admin.users') }}"
+                 class="text-indigo-100 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                Users
+              </a>
+              <a href="{{ url_for('admin.servers') }}"
+                 class="text-indigo-100 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                Servers
+              </a>
+              <a href="{{ url_for('admin.demo_report') }}"
+                 class="text-indigo-100 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                Demo Report
+              </a>
+            {% else %}
+              <a href="{{ url_for('student.dashboard') }}"
+                 class="text-indigo-100 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                My Demos
+              </a>
+            {% endif %}
+            <a href="{{ url_for('auth.logout') }}"
+               class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors border border-indigo-500">
+              Logout
+            </a>
+          {% else %}
+            <a href="{{ url_for('auth.login') }}"
+               class="bg-white text-indigo-700 hover:bg-indigo-50 px-4 py-2 rounded-md text-sm font-semibold transition-colors">
+              Login
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Flash Messages -->
+  {% from 'components/flash_messages.html' import render_flash %}
+  <div class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 mt-4">
+    {{ render_flash() }}
+  </div>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-gray-200 mt-auto">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 text-center text-sm text-gray-400">
+      Lab Demo Manager &mdash; Manage student demo links easily
+    </div>
+  </footer>
+
+</body>
+</html>

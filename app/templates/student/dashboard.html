@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% from 'components/demo_card.html' import render_card %}
+{% from 'components/modal.html' import render_modal %}
+
+{% block title %}My Demos – Lab Demo Manager{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-900">My Demos</h1>
+    <p class="text-gray-500 text-sm mt-1">
+      Your public namespace:
+      <code class="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-xs text-indigo-700">/{{ current_user.username }}/</code>
+    </p>
+  </div>
+  <button onclick="openModal('register-demo')"
+          class="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-colors">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+    </svg>
+    Register New Demo
+  </button>
+</div>
+
+{% if demos %}
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+    {% for demo in demos %}
+      {{ render_card(demo, editable=True, servers=servers) }}
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="text-center py-20 bg-white rounded-xl border border-gray-200">
+    <svg class="mx-auto w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+        d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+    </svg>
+    <h3 class="text-xl font-medium text-gray-500">No demos yet</h3>
+    <p class="mt-1 text-gray-400">Register your first demo to get a public URL.</p>
+    <button onclick="openModal('register-demo')"
+            class="mt-4 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-colors">
+      Register Demo
+    </button>
+  </div>
+{% endif %}
+
+<!-- Register New Demo Modal -->
+{% call render_modal('register-demo', 'Register New Demo') %}
+  <form action="{{ url_for('student.create_demo') }}" method="POST" class="space-y-4">
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Demo Name
+        <span class="font-normal text-gray-400 text-xs">(lowercase, letters, numbers, hyphens)</span>
+      </label>
+      <div class="flex items-center gap-2">
+        <span class="text-sm text-gray-400 font-mono flex-shrink-0">/{{ current_user.username }}/</span>
+        <input type="text" name="demo_name" required pattern="[a-z0-9-]+"
+               placeholder="my-cool-demo"
+               class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+      </div>
+    </div>
+
+    <!-- Server + Port selection -->
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Server</label>
+        <select name="server_id" required
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+          <option value="">— choose server —</option>
+          {% for srv in servers %}
+            <option value="{{ srv.id }}">{{ srv.name }} ({{ srv.ip }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Port</label>
+        <input type="number" name="port" min="1" max="65535"
+               placeholder="e.g. 8080"
+               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+        <p class="mt-0.5 text-xs text-gray-400">Leave blank for default (80/443)</p>
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Protocol</label>
+      <div class="flex gap-4">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="radio" name="scheme" value="http" checked class="text-indigo-600"/>
+          <span class="text-sm text-gray-700">HTTP</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="radio" name="scheme" value="https" class="text-indigo-600"/>
+          <span class="text-sm text-gray-700">HTTPS (self-signed OK)</span>
+        </label>
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Description <span class="font-normal text-gray-400">(optional)</span></label>
+      <textarea name="description" rows="2" placeholder="Brief description of your demo..."
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+    </div>
+    <div class="flex justify-end gap-3 pt-2">
+      <button type="button" onclick="closeModal('register-demo')"
+              class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+        Cancel
+      </button>
+      <button type="submit"
+              class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors">
+        Register Demo
+      </button>
+    </div>
+  </form>
+{% endcall %}
+{% endblock %}
