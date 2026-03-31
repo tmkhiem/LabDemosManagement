@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}404 – Page Not Found{% endblock %}
+
+{% block content %}
+<div class="min-h-[60vh] flex items-center justify-center">
+  <div class="text-center">
+    <p class="text-6xl font-bold text-indigo-300">404</p>
+    <h1 class="mt-4 text-3xl font-bold text-gray-900">Page not found</h1>
+    <p class="mt-2 text-gray-500">
+      The demo link you followed doesn't exist or has been deactivated.
+    </p>
+    <div class="mt-6 flex items-center justify-center gap-4">
+      <a href="{{ url_for('index') }}"
+         class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-colors">
+        Go to Homepage
+      </a>
+      {% if current_user.is_authenticated %}
+        {% if current_user.role == 'admin' %}
+          <a href="{{ url_for('admin.dashboard') }}"
+             class="px-5 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-semibold transition-colors">
+            Admin Dashboard
+          </a>
+        {% else %}
+          <a href="{{ url_for('student.dashboard') }}"
+             class="px-5 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-semibold transition-colors">
+            My Demos
+          </a>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
