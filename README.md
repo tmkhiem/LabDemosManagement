@@ -30,7 +30,7 @@ Admins create student accounts; students log in and register their running demo 
 - **Frontend:** Jinja2 templates + Tailwind CSS (via CDN)
 - **Database:** SQLite (development) / PostgreSQL-compatible via SQLAlchemy (production)
 - **Auth:** Session-based login with bcrypt password hashing (Flask-Login + Flask-Bcrypt)
-- **Redirect:** `/<student>/<demo>` → HTTP 302 to the registered `target_url`
+- **Reverse Proxy:** `/<student>/<demo>` → forwards requests to the registered `target_url` and streams the response back (supports HTTP and HTTPS with self-signed certificates)
 - **Server:** Gunicorn (WSGI) behind Nginx (TLS)
 
 ---
@@ -54,8 +54,8 @@ Admins create student accounts; students log in and register their running demo 
 | POST | `/dashboard/demos/<id>/update` | Student | Edit demo target URL / description |
 | POST | `/dashboard/demos/<id>/toggle` | Student | Activate / deactivate demo |
 | POST | `/dashboard/demos/<id>/delete` | Student | Soft-delete (deactivate) demo |
-| GET | `/<student>/<demo>` | Public | HTTP 302 redirect to demo's target URL |
-| GET | `/<student>/<demo>/<path:rest>` | Public | Redirect with path appended to target |
+| ANY | `/<student>/<demo>` | Public | Reverse-proxy request to demo's target URL |
+| ANY | `/<student>/<demo>/<path:rest>` | Public | Reverse-proxy with path appended to target |
 
 ---
 
@@ -69,7 +69,7 @@ LabDemosManagement/
 │   ├── auth.py                # Blueprint: /login, /logout + decorators
 │   ├── admin.py               # Blueprint: /admin/** routes
 │   ├── student.py             # Blueprint: /dashboard/** routes
-│   ├── proxy.py               # Blueprint: /<student>/<demo> redirect handler
+│   ├── proxy.py               # Blueprint: /<student>/<demo> reverse proxy handler
 │   ├── cli.py                 # Flask CLI commands
 │   └── templates/
 │       ├── base.html          # Shared layout with Tailwind CSS + nav
@@ -206,6 +206,8 @@ SECRET_KEY=<strong-random-secret>
 DATABASE_URL=postgresql://user:pass@localhost/lab_demos
 ALLOW_LOCAL_URLS=False
 LAB_SUBNET=10.0.0.0/8
+PROXY_TIMEOUT=30
+PROXY_VERIFY_SSL=False
 ```
 
 ---
@@ -264,11 +266,12 @@ Click **Delete** on a card → confirm. This deactivates the demo (soft delete).
 
 ## Demo App Requirements
 
-For the redirect to work correctly, your demo app must:
+Since the system acts as a reverse proxy (not a redirect), all traffic flows through the management server:
 
-1. **Accept any Host header** — since the browser is redirected to the original `target_url`, the Host header will be the IP/hostname of your server, not `demo.lab.domain`. Most frameworks do this by default.
-2. **Handle paths correctly** — if a visitor hits `/alice/my-app/dashboard`, the system redirects to `<target_url>/dashboard`. Your app must serve that path.
-3. **Be reachable from the browser** — the redirect sends the user's browser directly to the target URL; the management server never proxies traffic. Your demo app only needs to be reachable by the end user's browser.
+1. **Handle paths correctly** — if a visitor hits `/alice/my-app/dashboard`, the system forwards the request to `<target_url>/dashboard`. Your app must serve that path.
+2. **Be reachable from the management server** — the server fetches content from your `target_url` on behalf of the browser. Your demo app must be network-reachable from the machine running this system (typically the same LAN).
+3. **Self-signed HTTPS is supported** — if your demo runs on HTTPS with a self-signed certificate, the proxy will accept it by default (`PROXY_VERIFY_SSL=False`).
+4. **All HTTP methods are forwarded** — GET, POST, PUT, DELETE, PATCH, HEAD, and OPTIONS are all proxied through to your demo app.
 
 ---
 
@@ -281,6 +284,8 @@ For the redirect to work correctly, your demo app must:
 | `DATABASE_URL` | `sqlite:///lab_demos.db` | SQLAlchemy database URI |
 | `LAB_SUBNET` | `10.0.0.0/8` | Allowed subnet for target URLs (informational; future use) |
 | `ALLOW_LOCAL_URLS` | `True` in dev, `False` in prod | Allow `localhost`/`127.x` as target URLs (development only) |
+| `PROXY_TIMEOUT` | `30` | Timeout in seconds for upstream proxy requests |
+| `PROXY_VERIFY_SSL` | `False` | Verify SSL certificates of upstream demo apps (set `False` for self-signed certs) |
 
 ---
 
@@ -294,7 +299,8 @@ For the redirect to work correctly, your demo app must:
 | Reserved slugs | `admin`, `login`, `logout`, `dashboard`, `static` are blocked |
 | Ownership checks | All student demo mutations verify `demo.owner_id == current_user.id` |
 | Session cookies | `SESSION_COOKIE_HTTPONLY=True`; `SESSION_COOKIE_SECURE=True` in production |
-| Open redirect | Redirects only go to student-registered URLs; URL is validated at registration time |
+| Upstream SSL | Self-signed certs accepted by default (`PROXY_VERIFY_SSL=False`); enable verification in strict environments |
+| Proxy error handling | Connection failures → 502 Bad Gateway; timeouts → 504 Gateway Timeout |
 
 ---
 
@@ -321,7 +327,7 @@ For the redirect to work correctly, your demo app must:
 | `demo_name` | TEXT | URL slug. Unique per user |
 | `target_url` | TEXT | Full URL of the running demo app |
 | `description` | TEXT | Optional description |
-| `is_active` | BOOLEAN | Controls 302 vs 404 on public URL |
+| `is_active` | BOOLEAN | Controls proxy vs 404 on public URL |
 | `created_at` | DATETIME | UTC timestamp |
 | `updated_at` | DATETIME | UTC timestamp, updated on edit |
 
