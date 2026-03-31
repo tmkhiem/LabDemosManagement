@@ -1,6 +1,9 @@
+from datetime import datetime, timezone
+
 import requests as http_requests
 from flask import Blueprint, Response, abort, current_app, request, stream_with_context
 
+from . import db
 from .models import Demo, User
 
 proxy_bp = Blueprint("proxy", __name__)
@@ -58,6 +61,11 @@ def handle_demo(student: str, demo: str, remainder: str):
     ).first()
     if not demo_obj:
         abort(404)
+
+    # Record the access hit before proxying
+    demo_obj.hit_count = (demo_obj.hit_count or 0) + 1
+    demo_obj.last_accessed_at = datetime.now(timezone.utc)
+    db.session.commit()
 
     target_url = _build_target_url(
         demo_obj.target_url, remainder, request.query_string.decode("utf-8")

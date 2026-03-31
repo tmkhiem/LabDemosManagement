@@ -25,7 +25,7 @@
 {% if demos %}
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
     {% for demo in demos %}
-      {{ render_card(demo, editable=True) }}
+      {{ render_card(demo, editable=True, servers=servers) }}
     {% endfor %}
   </div>
 {% else %}
@@ -57,13 +57,42 @@
                class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
       </div>
     </div>
-    <div>
-      <label class="block text-sm font-medium text-gray-700 mb-1">Target URL</label>
-      <input type="url" name="target_url" required
-             placeholder="http://10.0.0.5:8080"
-             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
-      <p class="mt-1 text-xs text-gray-400">The URL where your demo is running. Must be http:// or https://.</p>
+
+    <!-- Server + Port selection -->
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Server</label>
+        <select name="server_id" required
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+          <option value="">— choose server —</option>
+          {% for srv in servers %}
+            <option value="{{ srv.id }}">{{ srv.name }} ({{ srv.ip }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Port</label>
+        <input type="number" name="port" min="1" max="65535"
+               placeholder="e.g. 8080"
+               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+        <p class="mt-0.5 text-xs text-gray-400">Leave blank for default (80/443)</p>
+      </div>
     </div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Protocol</label>
+      <div class="flex gap-4">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="radio" name="scheme" value="http" checked class="text-indigo-600"/>
+          <span class="text-sm text-gray-700">HTTP</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="radio" name="scheme" value="https" class="text-indigo-600"/>
+          <span class="text-sm text-gray-700">HTTPS (self-signed OK)</span>
+        </label>
+      </div>
+    </div>
+
     <div>
       <label class="block text-sm font-medium text-gray-700 mb-1">Description <span class="font-normal text-gray-400">(optional)</span></label>
       <textarea name="description" rows="2" placeholder="Brief description of your demo..."

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{% block title %}Lab Demo Manager{% endblock %}</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='tailwind.css') }}">
   <script src="{{ url_for('static', filename='app.js') }}" defer></script>
 </head>
 <body class="h-full flex flex-col">
@@ -32,11 +32,19 @@
             {% if current_user.role == 'admin' %}
               <a href="{{ url_for('admin.dashboard') }}"
                  class="text-indigo-100 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                Admin Dashboard
+                Dashboard
               </a>
               <a href="{{ url_for('admin.users') }}"
                  class="text-indigo-100 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                Manage Users
+                Users
+              </a>
+              <a href="{{ url_for('admin.servers') }}"
+                 class="text-indigo-100 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                Servers
+              </a>
+              <a href="{{ url_for('admin.demo_report') }}"
+                 class="text-indigo-100 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                Demo Report
               </a>
             {% else %}
               <a href="{{ url_for('student.dashboard') }}"

@@ -1,4 +1,4 @@
-{% macro render_card(demo, editable=False) %}
+{% macro render_card(demo, editable=False, servers=[]) %}
 <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col hover:shadow-md transition-shadow">
   <div class="p-5 flex-1">
     <div class="flex items-start justify-between gap-2">
@@ -52,12 +52,48 @@
 
   <!-- Edit Modal -->
   {% from 'components/modal.html' import render_modal %}
+  {% set parsed_port = demo.target_url.split(':')[2].split('/')[0] if demo.target_url.count(':') >= 2 else '' %}
+  {% set parsed_scheme = 'https' if demo.target_url.startswith('https') else 'http' %}
+  {% set parsed_ip = demo.target_url.replace('http://', '').replace('https://', '').split(':')[0].split('/')[0] %}
   {% call render_modal('edit-demo-' ~ demo.id, 'Edit Demo: ' ~ demo.demo_name) %}
     <form action="{{ url_for('student.update_demo', demo_id=demo.id) }}" method="POST" class="space-y-4">
+      <!-- Current target as reference -->
+      <div class="text-xs text-gray-500 bg-gray-50 rounded px-3 py-2 font-mono break-all">
+        Current: {{ demo.target_url }}
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Server</label>
+          <select name="server_id" required
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+            <option value="">— choose server —</option>
+            {% for srv in servers %}
+              <option value="{{ srv.id }}" {% if srv.ip == parsed_ip %}selected{% endif %}>
+                {{ srv.name }} ({{ srv.ip }})
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Port</label>
+          <input type="number" name="port" min="1" max="65535"
+                 value="{{ parsed_port }}"
+                 placeholder="e.g. 8080"
+                 class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+        </div>
+      </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Target URL</label>
-        <input type="url" name="target_url" value="{{ demo.target_url }}" required
-               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Protocol</label>
+        <div class="flex gap-4">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="radio" name="scheme" value="http" {% if parsed_scheme == 'http' %}checked{% endif %} class="text-indigo-600"/>
+            <span class="text-sm text-gray-700">HTTP</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="radio" name="scheme" value="https" {% if parsed_scheme == 'https' %}checked{% endif %} class="text-indigo-600"/>
+            <span class="text-sm text-gray-700">HTTPS (self-signed OK)</span>
+          </label>
+        </div>
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>

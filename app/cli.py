@@ -45,13 +45,52 @@ def register_commands(app: Flask) -> None:
             db.session.commit()
             click.echo(f"Admin user '{username}' created successfully.")
 
+    @app.cli.command("seed-servers")
+    def seed_servers():
+        """Seed the initial set of lab servers."""
+        from . import db
+        from .models import Server
+
+        initial_servers = [
+            ("dragon1", "10.0.1.11"),
+            ("dragon2", "10.0.1.12"),
+            ("phoenix1", "10.0.1.21"),
+            ("phoenix2", "10.0.1.22"),
+            ("phoenix3", "10.0.1.23"),
+        ]
+        with app.app_context():
+            added = 0
+            for name, ip in initial_servers:
+                if not Server.query.filter_by(name=name).first():
+                    db.session.add(Server(name=name, ip=ip))
+                    click.echo(f"  Added server: {name} → {ip}")
+                    added += 1
+                else:
+                    click.echo(f"  Skipped (exists): {name}")
+            db.session.commit()
+            click.echo(f"Seeded {added} server(s).")
+
     @app.cli.command("seed-demo-data")
     def seed_demo_data():
         """Seed sample student and demo data for development."""
         from . import db
-        from .models import Demo, User
+        from .models import Demo, Server, User
 
         with app.app_context():
+            # Ensure servers exist first
+            initial_servers = [
+                ("dragon1", "10.0.1.11"),
+                ("dragon2", "10.0.1.12"),
+                ("phoenix1", "10.0.1.21"),
+                ("phoenix2", "10.0.1.22"),
+                ("phoenix3", "10.0.1.23"),
+            ]
+            for name, ip in initial_servers:
+                if not Server.query.filter_by(name=name).first():
+                    db.session.add(Server(name=name, ip=ip))
+                    click.echo(f"Created server: {name} ({ip})")
+            db.session.flush()
+
             # Create sample students
             students = [
                 ("alice", "Alice Johnson"),
@@ -77,10 +116,10 @@ def register_commands(app: Flask) -> None:
 
             # Create sample demos
             sample_demos = [
-                (created_students[0], "web-app", "http://10.0.0.10:5000", "My Flask web app"),
-                (created_students[0], "api-demo", "http://10.0.0.10:8080", "REST API demo"),
-                (created_students[1], "ml-dashboard", "http://10.0.0.11:3000", "ML model dashboard"),
-                (created_students[2], "chat-app", "http://10.0.0.12:4000", "Real-time chat app"),
+                (created_students[0], "web-app", "http://10.0.1.11:5000", "My Flask web app"),
+                (created_students[0], "api-demo", "http://10.0.1.11:8080", "REST API demo"),
+                (created_students[1], "ml-dashboard", "http://10.0.1.12:3000", "ML model dashboard"),
+                (created_students[2], "chat-app", "http://10.0.1.21:4000", "Real-time chat app"),
             ]
             for owner, dname, url, desc in sample_demos:
                 if not Demo.query.filter_by(owner_id=owner.id, demo_name=dname).first():

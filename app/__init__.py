@@ -44,6 +44,9 @@ def create_app(config_name: str = "default") -> Flask:
     from . import cli as cli_module
     cli_module.register_commands(app)
 
+    # Custom Jinja2 filters / globals
+    app.jinja_env.globals['zip'] = zip
+
     # Custom 404 handler
     @app.errorhandler(404)
     def page_not_found(e):

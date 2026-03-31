@@ -39,6 +39,27 @@ class User(UserMixin, db.Model):
         }
 
 
+class Server(db.Model):
+    """A pre-registered lab server that students can pick as a demo host."""
+
+    __tablename__ = "servers"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    ip = db.Column(db.String(45), nullable=False)
+    created_at = db.Column(
+        db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc)
+    )
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "name": self.name,
+            "ip": self.ip,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
 class Demo(db.Model):
     __tablename__ = "demos"
     __table_args__ = (db.UniqueConstraint("owner_id", "demo_name"),)
@@ -49,6 +70,8 @@ class Demo(db.Model):
     target_url = db.Column(db.String(512), nullable=False)
     description = db.Column(db.Text, nullable=True)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
+    hit_count = db.Column(db.Integer, nullable=False, default=0)
+    last_accessed_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(
         db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc)
     )
@@ -71,6 +94,8 @@ class Demo(db.Model):
             "target_url": self.target_url,
             "description": self.description,
             "is_active": self.is_active,
+            "hit_count": self.hit_count,
+            "last_accessed_at": self.last_accessed_at.isoformat() if self.last_accessed_at else None,
             "public_url": self.public_url,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
